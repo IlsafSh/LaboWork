@@ -150,3 +150,6 @@ TEST-1:Ae-21-21,ZavyalovGA,24,5
 TEST-2:Ae-21-21,ZavyalovGA,17,3
 TEST-3:Ae-21-21,ZavyalovGA,21,4
 TEST-4:Ae-21-21,ZavyalovGA,19,4
+
+Total number of perfect attempts: 
+10
