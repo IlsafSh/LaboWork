@@ -4,12 +4,13 @@
 
 # Функция проверки посещаемости и оценок
 check_attendance_and_scores() {
-  local group=${2}
-  local subject=${3}
-  local subject_folder="./$subject"
+  local fs_path=${1}
+  local group=${3}
+  local subject=${4}
+  local subject_folder="$fs_path/$subject"
   local tests_folder="$subject_folder/tests"
   local attendance_file="$subject_folder/$group-attendance"
-  local result=""
+  local result="Студенты, пропустившие 1-ую лекцию и сдавшие 1-ый тест на 5:\n"
 
   # Проверка, что папка предмета существует
   if [ ! -d "$subject_folder" ]; then
@@ -47,6 +48,11 @@ check_attendance_and_scores() {
       done
     fi
   done < "$attendance_file"
+
+  # Если в result ничего не добавлено, значит условие не выполнено
+  if [[ "$result" == "Студенты, пропустившие 1-ую лекцию и сдавшие 1-ый тест на 5:\n" ]]; then
+    result+="Студенты не найдены."
+  fi
 
   echo -e "$result"
 }
