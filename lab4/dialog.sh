@@ -119,6 +119,20 @@ check_category() {
   return 0
 }
 
+# Выбор пути к файловой системе преподавателя через --fselect
+fs_path=$($DIALOG --stdout --title "Выбор файловой системы преподавателя" --fselect "$HOME/" 15 70)
+if [ -z "$fs_path" ]; then
+    clear
+    echo "Путь не указан. Работа завершена."
+    exit 1
+fi
+
+# Проверка, существует ли указанный путь
+if [ ! -d "$fs_path" ]; then
+    $DIALOG --msgbox "Указанный путь не существует. Пожалуйста, перезапустите и попробуйте снова." 10 50
+    exit 1
+fi
+
 # Основной цикл для возврата в главное меню
 while true; do
   choice=$($DIALOG --clear --stdout --title "Главное меню" \
@@ -145,20 +159,20 @@ while true; do
       subject_choice=$(select_subject)
       check_category "$subject_choice" "предмет" || continue
 
-      bash funcs/1_search_students.sh search_students_not_passed_tests "$group_choice" "$subject_choice" > "$tempfile"
-      fold -s -w 160 "$tempfile" > "${tempfile}_folded"
-      $DIALOG --title "Студенты, не сдавшие тесты" --textbox "${tempfile}_folded" 20 100
-      rm "${tempfile}_folded"  # Удаляем временный отформатированный файл
+      bash funcs/1_search_students.sh "$fs_path" search_students_not_passed_tests "$group_choice" "$subject_choice" > "$tempfile"
+      fold -s -w 160 "$tempfile" > "${tempfile}_formatted"
+      $DIALOG --title "Результат: Студенты, не сдавшие тесты" --textbox "${tempfile}_formatted" 20 100
+      rm "${tempfile}_formatted"
     ;;
 
     2) # Лучший студент по числу правильных ответов
       group_choice=$(select_group_category)
       check_category "$group_choice" "группу" || continue
 
-      bash funcs/2_find_best_student.sh find_best_student "$group_choice" > "$tempfile"
-      fold -s -w 160 "$tempfile" > "${tempfile}_folded"
-      $DIALOG --title "Лучший студент" --textbox "${tempfile}_folded" 20 100
-      rm "${tempfile}_folded"
+      bash funcs/2_find_best_student.sh "$fs_path" find_best_student "$group_choice" > "$tempfile"
+      fold -s -w 160 "$tempfile" > "${tempfile}_formatted"
+      $DIALOG --title "Результат: Лучший студент" --textbox "${tempfile}_formatted" 20 100
+      rm "${tempfile}_formatted"
     ;;
 
     3) # Средний балл по предмету
@@ -168,20 +182,20 @@ while true; do
       student=$($DIALOG --inputbox "Введите фамилию студента:" 10 40 --stdout)
       check_category "$student" "студента" || continue
 
-      bash funcs/3_average_score.sh calculate_average_score "$subject_choice" "$student" > "$tempfile"
-      fold -s -w 160 "$tempfile" > "${tempfile}_folded"
-      $DIALOG --title "Средний балл студента" --textbox "${tempfile}_folded" 20 100
-      rm "${tempfile}_folded"
+      bash funcs/3_average_score.sh "$fs_path" calculate_average_score "$subject_choice" "$student" > "$tempfile"
+      fold -s -w 160 "$tempfile" > "${tempfile}_formatted"
+      $DIALOG --title "Результат: Средний балл" --textbox "${tempfile}_formatted" 20 100
+      rm "${tempfile}_formatted"
     ;;
 
     4) # Досье студента
       student=$($DIALOG --inputbox "Введите фамилию студента:" 10 40 --stdout)
       check_category "$student" "студента" || continue
 
-      bash funcs/4_dossier.sh display_student_dossier "$student" > "$tempfile"
-      fold -s -w 160 "$tempfile" > "${tempfile}_folded"
-      $DIALOG --title "Досье студента" --textbox "${tempfile}_folded" 20 100
-      rm "${tempfile}_folded"
+      bash funcs/4_dossier.sh "$fs_path" display_student_dossier "$student" > "$tempfile"
+      fold -s -w 160 "$tempfile" > "${tempfile}_formatted"
+      $DIALOG --title "Результат: Досье студента" --textbox "${tempfile}_formatted" 20 100
+      rm "${tempfile}_formatted"
     ;;
 
     5) # Проверка посещаемости и оценок
@@ -191,10 +205,10 @@ while true; do
       subject_choice=$(select_subject)
       check_category "$subject_choice" "предмет" || continue
 
-      bash funcs/5_attendance_and_scores.sh check_attendance_and_scores "$group_choice" "$subject_choice" > "$tempfile"
-      fold -s -w 160 "$tempfile" > "${tempfile}_folded"
-      $DIALOG --title "Посещаемость и оценки" --textbox "${tempfile}_folded" 20 100
-      rm "${tempfile}_folded"
+      bash funcs/5_attendance_and_scores.sh "$fs_path" check_attendance_and_scores "$group_choice" "$subject_choice" > "$tempfile"
+      fold -s -w 160 "$tempfile" > "${tempfile}_formatted"
+      $DIALOG --title "Результат: Посещаемость и оценки" --textbox "${tempfile}_formatted" 20 100
+      rm "${tempfile}_formatted"
     ;;
   esac
 done

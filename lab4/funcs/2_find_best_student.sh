@@ -4,11 +4,12 @@
 
 # Функция для нахождения студента с максимальным числом правильных ответов
 find_best_student() {
+  local fs_path=${1}
   local group=${!#}
   declare -A student_ans
 
   # Поиск всех тестовых файлов
-  tests_files=$(find ./ -type f -path "*/tests/TEST-*")
+  tests_files=$(find $fs_path/ -type f -path "*/tests/TEST-*")
   #echo $tests_files
 
   # Подсчет общего количества правильных ответов для каждого студента

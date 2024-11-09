@@ -5,12 +5,17 @@
 # 2.1.	Вывод списка студентов, не сдавших хотя бы один тест (с указанием номера теста)
 # Функция для поиска студентов, не сдавших тесты
 search_students_not_passed_tests() {
-  local group=${2}
-  local subject=${3}
-  local group_file="./students/groups/$group"
-  local subject_folder="./$subject"
+  local fs_path=${1}
+  local group=${3}
+  local subject=${4}
+  local group_file="$fs_path/students/groups/$group"
+  local subject_folder="$fs_path/$subject"
   local tests_folder="$subject_folder/tests"
   local result="Студенты, не сдавшие хотя бы один тест:\n"
+
+  echo $fs_path
+  echo $group
+  echo $subject
 
   # Проверка, что файл группы существует
   if [ ! -f "$group_file" ]; then
