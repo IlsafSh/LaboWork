@@ -1,2 +1,2 @@
 # LaboWork
-Perform labs of OS
+Perform labs
