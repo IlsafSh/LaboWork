@@ -3,16 +3,18 @@
 #include <iostream>
 #include <string>
 
-#define PATCH_OFFSET 0x05000 // Смещение для чтения серийного номера
 #define PROTECTED_PROGRAM_PATH "lab1.exe"
 
-// Функция получения серийного номера HDD через DeviceIoControl
+// Глобальная переменная в секции .data (зарезервированное место для серийного номера)
+#pragma section(".data", read, write)
+__declspec(allocate(".data")) char modelHDD[64] = "###############################################################";
+
 std::string getHddSerial() {
     HANDLE hDevice = CreateFileW(L"\\\\.\\PhysicalDrive0", GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
     if (hDevice == INVALID_HANDLE_VALUE) {
-        std::cerr << "Cannot open the drive! Error: " << GetLastError() << std::endl;
+        std::wcout << L"Cannot open the drive! Error: " << GetLastError() << std::endl;
         return "";
     }
 
@@ -26,22 +28,17 @@ std::string getHddSerial() {
     CloseHandle(hDevice);
 
     if (!success) {
-        std::cerr << "DeviceIoControl failed with error: " << GetLastError() << std::endl;
+        std::wcout << L"DeviceIoControl failed with error: " << GetLastError() << std::endl;
         return "";
     }
 
     STORAGE_DEVICE_DESCRIPTOR* desc = reinterpret_cast<STORAGE_DEVICE_DESCRIPTOR*>(buffer);
-
-    if (desc->SerialNumberOffset == 0 || desc->SerialNumberOffset >= sizeof(buffer)) {
-        std::cerr << "Error: No valid serial number found!" << std::endl;
+    if (desc->SerialNumberOffset == 0) {
+        std::wcout << L"Error: No serial number found!" << std::endl;
         return "";
     }
 
-    // Читаем серийный номер и убираем возможные пробелы
-    std::string serial(reinterpret_cast<char*>(buffer) + desc->SerialNumberOffset);
-    serial.erase(std::remove(serial.begin(), serial.end(), ' '), serial.end());
-
-    return serial;
+    return std::string(reinterpret_cast<char*>(buffer) + desc->SerialNumberOffset);
 }
 
 int main() {
@@ -52,24 +49,10 @@ int main() {
         return 1;
     }
 
-    // Открываем саму программу для проверки серийного номера
-    FILE* file;
-    fopen_s(&file, PROTECTED_PROGRAM_PATH, "rb");
-    if (!file) {
-        std::cerr << "Error: Unable to open lab1.exe!" << std::endl;
-        return 1;
-    }
+    // Преобразуем модель HDD из char* в std::string, чтобы можно было использовать find()
+    std::string modelHDDString(modelHDD);
 
-    // Читаем сохраненный серийный номер
-    fseek(file, PATCH_OFFSET, SEEK_SET);
-    char storedSerial[64] = { 0 };
-    fread(storedSerial, sizeof(char), sizeof(storedSerial) - 1, file);
-    fclose(file);
-
-    std::string storedSerialStr(storedSerial);
-
-    // Проверяем, входит ли записанный серийный номер в текущий серийный номер
-    if ((currentSerial.find(storedSerialStr) != std::string::npos) && (storedSerialStr != "")) {
+    if ((modelHDDString.find(currentSerial) != std::string::npos) && (modelHDDString != "")) {
         std::cout << "The program is activated!" << std::endl;
     }
     else {

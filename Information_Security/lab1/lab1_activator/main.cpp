@@ -2,17 +2,15 @@
 #include <winioctl.h>
 #include <iostream>
 #include <string>
+#include <shlwapi.h>  // Для PathRemoveFileSpec
+#pragma comment(lib, "Shlwapi.lib")
 
-#define PATCH_OFFSET 0x05000 // Смещение для записи серийного номера
-#define PROTECTED_PROGRAM_PATH "lab1.exe"
-
-// Функция для получения серийного номера HDD через DeviceIoControl
 std::string getHddSerial() {
     HANDLE hDevice = CreateFileW(L"\\\\.\\PhysicalDrive0", GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
     if (hDevice == INVALID_HANDLE_VALUE) {
-        std::cerr << "Cannot open the drive! Error: " << GetLastError() << std::endl;
+        std::wcout << L"Cannot open the drive! Error: " << GetLastError() << std::endl;
         return "";
     }
 
@@ -26,27 +24,20 @@ std::string getHddSerial() {
     CloseHandle(hDevice);
 
     if (!success) {
-        std::cerr << "DeviceIoControl failed with error: " << GetLastError() << std::endl;
+        std::wcout << L"DeviceIoControl failed with error: " << GetLastError() << std::endl;
         return "";
     }
 
     STORAGE_DEVICE_DESCRIPTOR* desc = reinterpret_cast<STORAGE_DEVICE_DESCRIPTOR*>(buffer);
-
-    // Проверяем, есть ли серийный номер
-    if (desc->SerialNumberOffset == 0 || desc->SerialNumberOffset >= sizeof(buffer)) {
-        std::cerr << "Error: No valid serial number found!" << std::endl;
+    if (desc->SerialNumberOffset == 0) {
+        std::wcout << L"Error: No serial number found!" << std::endl;
         return "";
     }
 
-    // Читаем серийный номер и убираем возможные мусорные символы
-    std::string serial(reinterpret_cast<char*>(buffer) + desc->SerialNumberOffset);
-    serial.erase(std::remove(serial.begin(), serial.end(), ' '), serial.end()); // Убираем пробелы
-
-    return serial;
+    return std::string(reinterpret_cast<char*>(buffer) + desc->SerialNumberOffset);
 }
 
 int main() {
-    // Получаем текущий серийный номер HDD
     std::string newSerial = getHddSerial();
     if (newSerial.empty()) {
         std::cout << "Error: Unable to retrieve HDD serial number!" << std::endl;
@@ -54,35 +45,41 @@ int main() {
         return 1;
     }
 
-    // Открываем lab1.exe для чтения и записи
+    char activatorPath[MAX_PATH];
+    GetModuleFileNameA(NULL, activatorPath, MAX_PATH);
+    PathRemoveFileSpecA(activatorPath);
+    std::string protectedExePath = "lab1.exe";
+
     FILE* file;
-    fopen_s(&file, PROTECTED_PROGRAM_PATH, "r+b");
+    fopen_s(&file, protectedExePath.c_str(), "r+b");
+
     if (!file) {
-        std::cerr << "Error: Unable to open lab1.exe!" << std::endl;
+        std::cerr << "Error: Unable to open " << protectedExePath << "!" << std::endl;
         return 1;
     }
 
-    // Читаем текущий серийный номер
-    fseek(file, PATCH_OFFSET, SEEK_SET);
-    char storedSerial[64] = { 0 };
-    fread(storedSerial, sizeof(char), sizeof(storedSerial) - 1, file);
+    // Поиск адреса modelHDD в бинарном файле
+    const char marker[64] = "###############################################################";
+    char buffer[1024];
 
-    // Если серийный номер совпадает, ничего не меняем
-    if (newSerial == std::string(storedSerial)) {
-        std::cout << "Program is already activated on this device!" << std::endl;
-        fclose(file);
-        system("pause");
-        return 0;
+    size_t offset = 0;
+    while (fread(buffer, 1, sizeof(buffer), file)) {
+        for (size_t i = 0; i < sizeof(buffer) - sizeof(marker); ++i) {
+            if (memcmp(&buffer[i], marker, sizeof(marker)) == 0) {
+                offset += i;
+                goto found;
+            }
+        }
+        offset += sizeof(buffer);
     }
 
-    // Стираем старый серийный номер
-    fseek(file, PATCH_OFFSET, SEEK_SET);
-    char emptyData[64] = { 0 }; // Заполняем массив нулями
-    fwrite(emptyData, sizeof(char), sizeof(emptyData), file);
-    fflush(file);
+    std::cerr << "Error: marker of modelHDD not found in " << protectedExePath << "!" << std::endl;
+    system("pause");
+    fclose(file);
+    return 1;
 
-    // Записываем новый серийный номер
-    fseek(file, PATCH_OFFSET, SEEK_SET);
+found:
+    fseek(file, offset, SEEK_SET);
     fwrite(newSerial.c_str(), sizeof(char), newSerial.size(), file);
     fclose(file);
 
