@@ -178,6 +178,7 @@ void sequent_pr(int rnd) {
 int parallel_pr(int argc, char** argv, int rnd) {
 	float A[N], B[N], C[N], Y[N];
 	int rank, size;
+	double time1, time2;
 	MPI_Status status;
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -192,44 +193,51 @@ int parallel_pr(int argc, char** argv, int rnd) {
 			B[i] = rand() % max;
 			C[i] = rand() % max;
 		}
-		for (int i = 1; i < size; i++) {
-			// Распределение элементов массивов между процессами
-			MPI_Send(&A[(int)i * N / size], (int)N / size,
-				MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-			MPI_Send(&B[(int)i * N / size], (int)N / size,
-				MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-			MPI_Send(&C[(int)i * N / size], (int)N / size,
-				MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+		time1 = MPI_Wtime(); // Определение времени начала обработки
+		for (int cicl = 0; cicl < 10000; cicl++) { // Цикл кратности
+			for (int i = 1; i < size; i++) {
+				// Распределение элементов массивов между процессами
+				MPI_Send(&A[(int)i * N / size], (int)N / size,
+					MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+				MPI_Send(&B[(int)i * N / size], (int)N / size,
+					MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+				MPI_Send(&C[(int)i * N / size], (int)N / size,
+					MPI_FLOAT, i, 0, MPI_COMM_WORLD);
+			}
+			// Цикл вычислений
+			for (int i = 0; i < N / size; i++) {
+				Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
+			}
+			// Сбор результатов в массив Y
+			for (int i = 1; i < size; i++) {
+				MPI_Recv(&Y[(int)i * N / size], (int)N / size,
+					MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status);
+			}
 		}
-		// Цикл вычислений
-		for (int i = 0; i < N / size; i++) {
-			Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
-		}
-		// Сбор результатов в массив Y
-		for (int i = 1; i < size; i++) {
-			MPI_Recv(&Y[(int)i * N / size], (int)N / size,
-				MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status);
-		}
-		// Вывод результатов
-		for (int i = 0; i < N; i++)
-			printf("Y[%d] = %f\n", i, Y[i]);
+		time2 = MPI_Wtime();	// Определение времени конца обработки
+		double time = time2 - time1;
 
+		for (int i = 0; i < N; i++)		// Вывод результатов
+			printf("Y[%d] = %f\n", i, Y[i]);
+		printf("TIME=%f\n", time);
 	}
 	else { // Для всех процессов, кроме нулевого
-		// Прием массивов
-		MPI_Recv(&A[(int)rank * N / size], (int)N / size,
-			MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&B[(int)rank * N / size], (int)N / size,
-			MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&C[(int)rank * N / size], (int)N / size,
-			MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-		// Вычисления
-		for (int i = rank * N / size; i < (rank + 1) * N / size; i++) {
-			Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
+		for (int cicl = 0; cicl < 10000; cicl++) { // Цикл кратности
+			// Прием массивов
+			MPI_Recv(&A[(int)rank * N / size], (int)N / size,
+				MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(&B[(int)rank * N / size], (int)N / size,
+				MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(&C[(int)rank * N / size], (int)N / size,
+				MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+			// Вычисления
+			for (int i = rank * N / size; i < (rank + 1) * N / size; i++) {
+				Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
+			}
+			// Передача результатов нулевому процессу
+			MPI_Send(&Y[(int)rank * N / size], (int)N / size,
+				MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
 		}
-		// Передача результатов нулевому процессу
-		MPI_Send(&Y[(int)rank * N / size], (int)N / size,
-			MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
 	}
 	MPI_Finalize();
 	return 0;
