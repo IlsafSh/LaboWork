@@ -35,7 +35,7 @@
 //    return 0;
 //}
 
-	//Пример последовательной программы
+    //Пример последовательной программы
 //#include <stdio.h>
 //#define N1 32
 //#define N2 64
@@ -132,7 +132,7 @@
 //	return 0;
 //}
 
-#include <iostream>
+#include <iostream> 
 #include <stdio.h>
 #include <mpi.h>
 #include <cstdlib>
@@ -142,46 +142,13 @@
 #define S1 10
 #define S2 15
 
-void sequent_pr(int rnd);
 int parallel_pr(int argc, char** argv, int rnd);
 
 int main(int argc, char** argv) {
     int rnd = 42;		// Фиксированный seed генерации
-    //printf("----------Sequential program----------\n");
-    //sequent_pr(rnd);
     printf("----------Parallel program----------\n");
     parallel_pr(argc, argv, rnd);
-
     return 0;
-}
-
-void sequent_pr(int rnd) {
-    float* A = (float*)malloc(N * sizeof(float));
-    float* B = (float*)malloc(N * sizeof(float));
-    float* C = (float*)malloc(N * sizeof(float));
-    float* Y = (float*)malloc(N * sizeof(float));
-
-    srand(rnd);
-    for (int i = 0; i < N; i++) {
-        A[i] = rand() % max;
-        B[i] = rand() % max;
-        C[i] = rand() % max;
-    }
-
-    for (int i = 0; i < N; i++) {
-        Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
-    }
-
-    // Вывод результатов
-    // for (int i = 0; i < N; i++)
-    //     printf("Y[%d] = %f\n", i, Y[i]);
-
-    free(A);
-    free(B);
-    free(C);
-    free(Y);
-
-    return;
 }
 
 int parallel_pr(int argc, char** argv, int rnd) {
@@ -202,55 +169,51 @@ int parallel_pr(int argc, char** argv, int rnd) {
     float* C = (float*)malloc(N * sizeof(float));
     float* Y = (float*)malloc(N * sizeof(float));
 
+
+
+    // РЁР°Рі 2: Р—Р°РїРѕР»РЅРµРЅРёРµ РјР°СЃСЃРёРІРѕРІ РІ РєР°Р¶РґРѕРј РїСЂРѕС†РµСЃСЃРµ
+    srand(rnd + rank); // РСЃРїРѕР»СЊР·СѓРµРј СЂР°Р·РЅС‹Р№ seed РґР»СЏ СЂР°Р·РЅС‹С… РїСЂРѕС†РµСЃСЃРѕРІ
+    for (int i = 0; i < chunk; i++) {
+        A[rank * chunk + i] = rand() % max;
+        B[rank * chunk + i] = rand() % max;
+        C[rank * chunk + i] = rand() % max;
+    }
+
+    // РЁР°Рі 3: Р’С‹С‡РёСЃР»РµРЅРёСЏ
     if (rank == 0) {
-        srand(rnd);
-        for (int i = 0; i < N; i++) {
-            A[i] = rand() % max;
-            B[i] = rand() % max;
-            C[i] = rand() % max;
+        time1 = MPI_Wtime(); // РќР°С‡Р°Р»Рѕ РёР·РјРµСЂРµРЅРёСЏ РІСЂРµРјРµРЅРё
+    }
+
+    for (int cicl = 0; cicl < 10000; cicl++) { // Р¦РёРєР» РєСЂР°С‚РЅРѕСЃС‚Рё
+        for (int i = 0; i < chunk; i++) {
+            Y[rank * chunk + i] = (A[rank * chunk + i] * B[rank * chunk + i] + S1) / S2 + C[rank * chunk + i];
         }
 
-        time1 = MPI_Wtime(); // Начало измерения времени
+        // РЁР°Рі 4: РћС‚РїСЂР°РІРєР° СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ РЅСѓР»РµРІРѕРјСѓ РїСЂРѕС†РµСЃСЃСѓ
+        if (rank != 0) {
+            MPI_Send(&Y[rank * chunk], chunk, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+        }
 
-        for (int cicl = 0; cicl < 10000; cicl++) { // Цикл кратности
-            for (int i = 1; i < size; i++) {
-                MPI_Send(&A[i * chunk], chunk, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&B[i * chunk], chunk, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-                MPI_Send(&C[i * chunk], chunk, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-            }
-            // Цикл вычислений
-            for (int i = 0; i < chunk; i++) {
-                Y[i] = (A[i] * B[i] + S1) / S2 + C[i];
-            }
-            // Сбор результатов в массив Y
+
+        // РЁР°Рі 5: РЎР±РѕСЂ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ РІ РЅСѓР»РµРІРѕРј РїСЂРѕС†РµСЃСЃРµ
+        if (rank == 0) {
             for (int i = 1; i < size; i++) {
                 MPI_Recv(&Y[i * chunk], chunk, MPI_FLOAT, i, 0, MPI_COMM_WORLD, &status);
             }
+
         }
 
-        time2 = MPI_Wtime();    // Определение времени конца обработки
+    }
+    //// Вывод результатов
+    //for (int i = 0; i < N; i++)
+    //    printf("Y[%d] = %f\n", i, Y[i]);
+
+    if (rank == 0) {
+        time2 = MPI_Wtime(); // Определение времени конца обработки
         double time = time2 - time1;
-
-        // Вывод результатов
-        // for (int i = 0; i < N; i++)
-        //     printf("Y[%d] = %f\n", i, Y[i]);
-
         printf("TIME=%f\n", time);
     }
-    else {  // Для всех процессов, кроме нулевого
-        for (int cicl = 0; cicl < 10000; cicl++) {
-            // Прием массивов
-            MPI_Recv(&A[rank * chunk], chunk, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-            MPI_Recv(&B[rank * chunk], chunk, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-            MPI_Recv(&C[rank * chunk], chunk, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
-            // Вычисления
-            for (int i = 0; i < chunk; i++) {
-                Y[rank * chunk + i] = (A[rank * chunk + i] * B[rank * chunk + i] + S1) / S2 + C[rank * chunk + i];
-            }
-            // Передача результатов нулевому процессу
-            MPI_Send(&Y[rank * chunk], chunk, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
-        }
-    }
+  
 
     // Освобождение памяти
     free(A);
