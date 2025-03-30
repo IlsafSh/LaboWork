@@ -6,6 +6,9 @@
 #include <memory>
 #include <windows.h>              // Библиотека Windows API для работы с консолью (установка UTF-8)
 #include <chrono>                 // Библиотека для замера времени выполнения операций
+#include <filesystem>             // Для работы с файловыми путями
+
+namespace fs = std::filesystem;
 
 // Функция конвертации std::string → std::wstring (для корректного вывода в консоль)
 std::wstring to_wstring(const std::string& str) {
@@ -121,18 +124,42 @@ std::string get_filename_from_user(const std::wstring& prompt, const std::string
     return filename.empty() ? default_name : filename;
 }
 
-int main() {
+// Функция запроса пути к папке с текстовыми файлами
+std::string get_folder_from_user(const std::wstring& prompt) {
+    std::wcout << prompt;
+    std::string folder;
+    std::getline(std::cin, folder);
+    return folder;
+}
+
+int main(int argc, char* argv[]) {
 #ifdef BOTAN_HAS_GOST_28147_89
     try {
         setlocale(LC_ALL, "ru_RU.UTF-8");  // Устанавливаем русскую локаль
-        SetConsoleOutputCP(CP_UTF8);       // Устанавливаем кодировку UTF-8 для корректного вывода
+        SetConsoleCP(1251);
+        SetConsoleOutputCP(CP_UTF8);       // Устанавливаем кодировку UTF-8 для корректного ввода/вывода
+
+        std::wcout << L"---------- СИММЕТРИЧНОЕ ШИФРОВАНИЕ ----------\n";
+        std::wcout << L"-- Botan ------ GOST-28147-89 ------ Magma --\n";
+
+        // Получаем путь к папке с текстовыми файлами из параметров командной строки или у пользователя
+        std::string folder_path;
+        if (argc >= 2) {
+            folder_path = argv[1];  // Если путь передан, используем его
+        }
+        else {
+            folder_path = get_folder_from_user(L"Введите путь к папке с текстовыми файлами: ");
+        }
+
+        // Проверяем, существует ли папка
+        if (!fs::exists(folder_path) || !fs::is_directory(folder_path)) {
+            std::wcout << L"Ошибка: указанная папка не существует.\n";
+            return 1;
+        }
 
         // Определяем ключ шифрования (256 бит)
         std::vector<uint8_t> key = Botan::hex_decode(
             "00112233445566778899AABBCCDDEEFF00112233445566778899AABBCCDDEEFF");
-
-        std::wcout << L"----------Симметричное шифрование----------\n";
-        std::wcout << L"-Botan---------GOST-28147-89---------Magma-\n";
 
         int choice;
         while (true) {
@@ -140,7 +167,7 @@ int main() {
                 << L"1 - Зашифровать файл\n"
                 << L"2 - Расшифровать файл\n"
                 << L"0 - Выход\n"
-                << L"...";
+                << L"..." << std::endl;
 
             std::cin >> choice;
             std::cin.ignore(); // Очистка буфера после ввода
@@ -151,7 +178,7 @@ int main() {
                 std::string encrypted_file = get_filename_from_user(
                     L"Введите имя файла для сохранения зашифрованных данных (по умолчанию: out_enc.txt): ", "out_enc.txt");
 
-                encrypt_file(input_file, encrypted_file, key);
+                encrypt_file(folder_path + "\\" + input_file, folder_path + "\\" + encrypted_file, key);
                 std::wcout << L"Файл " << to_wstring(input_file) << L" зашифрован в " << to_wstring(encrypted_file) << std::endl;
 
             }
@@ -161,10 +188,10 @@ int main() {
                 std::string decrypted_file = get_filename_from_user(
                     L"Введите имя файла для сохранения расшифрованных данных (по умолчанию: out_dec.txt): ", "out_dec.txt");
 
-                decrypt_file(encrypted_file, decrypted_file, key);
+                decrypt_file(folder_path + "\\" + encrypted_file, folder_path + "\\" + decrypted_file, key);
                 std::wcout << L"Файл " << to_wstring(encrypted_file) << L" расшифрован в " << to_wstring(decrypted_file) << std::endl;
 
-                std::wifstream result(decrypted_file);
+                std::wifstream result(folder_path + "\\" + decrypted_file);
                 result.imbue(std::locale("ru_RU.UTF-8"));
                 std::wcout << L"Содержимое расшифрованного файла:\n" << result.rdbuf() << std::endl;
 
