@@ -216,23 +216,60 @@ class Program
 
     public static void EncryptFile(string inputFile, string outputFile, RsaKeyParameters publicKey)
     {
-        byte[] inputData = File.ReadAllBytes(inputFile);
-
+        const int maxBlockSize = 190; // Размер блока для RSA 2048 с PKCS#1 padding
         var encryptEngine = new Pkcs1Encoding(new RsaEngine());
         encryptEngine.Init(true, publicKey);
 
-        byte[] encryptedData = encryptEngine.ProcessBlock(inputData, 0, inputData.Length);
-        File.WriteAllBytes(outputFile, encryptedData);
+        using (var inputStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
+        using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+        using (var writer = new BinaryWriter(outputStream))
+        {
+            byte[] buffer = new byte[maxBlockSize];
+            int bytesRead;
+
+            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                byte[] dataToEncrypt = buffer[..bytesRead];
+                byte[] encryptedData = encryptEngine.ProcessBlock(dataToEncrypt, 0, dataToEncrypt.Length);
+
+                // Записываем размер блока (2 байта) и сам зашифрованный блок
+                writer.Write((ushort)encryptedData.Length);
+                writer.Write(encryptedData);
+            }
+        }
     }
+
 
     public static void DecryptFile(string inputFile, string outputFile, AsymmetricKeyParameter privateKey)
     {
-        byte[] encryptedData = File.ReadAllBytes(inputFile);
-
         var decryptEngine = new Pkcs1Encoding(new RsaEngine());
         decryptEngine.Init(false, privateKey);
 
-        byte[] decryptedData = decryptEngine.ProcessBlock(encryptedData, 0, encryptedData.Length);
-        File.WriteAllBytes(outputFile, decryptedData);
+        using (var inputStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read))
+        using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+        using (var reader = new BinaryReader(inputStream))
+        {
+            int blockIndex = 0;
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                try
+                {
+                    // Читаем размер блока
+                    ushort blockSize = reader.ReadUInt16();
+                    byte[] encryptedBlock = reader.ReadBytes(blockSize);
+
+                    // Дешифруем
+                    byte[] decryptedBlock = decryptEngine.ProcessBlock(encryptedBlock, 0, encryptedBlock.Length);
+                    outputStream.Write(decryptedBlock, 0, decryptedBlock.Length);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка расшифровки блока {blockIndex}: {ex.Message}. Пропуск поврежденных данных...");
+                }
+                blockIndex++;
+            }
+        }
     }
+
+
 }
