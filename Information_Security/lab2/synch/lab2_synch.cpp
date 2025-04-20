@@ -37,14 +37,14 @@ void encrypt_file(const std::string& input_filename, const std::string& output_f
     // Создаем объект блочного шифра GOST 28147-89 (Магма)
     std::unique_ptr<Botan::BlockCipher> cipher(Botan::BlockCipher::create("GOST-28147-89"));
     if (!cipher) {
-        throw std::runtime_error("Ошибка: не удалось создать объект шифра GOST-28147-89");
+        throw std::runtime_error("Error: shifr GOST-28147-89 not working");
     }
     cipher->set_key(key);  // Устанавливаем ключ шифрования
 
     // Открываем входной файл для чтения в бинарном режиме
     std::ifstream input(input_filename, std::ios::binary);
     if (!input) {
-        throw std::runtime_error("Ошибка: не удалось открыть входной файл");
+        throw std::runtime_error("Error: input file not openning");
     }
 
     // Открываем выходной файл для записи зашифрованных данных
@@ -71,7 +71,7 @@ void encrypt_file(const std::string& input_filename, const std::string& output_f
     // Записываем зашифрованные данные в выходной файл
     output.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
 
-    std::wcout << L"Шифрование завершено за " << encryption_time.count() << L" мс.\n";
+    std::wcout << L"Encryption time " << encryption_time.count() << L" мс.\n";
 }
 
 // Функция дешифрования файла
@@ -79,14 +79,14 @@ void decrypt_file(const std::string& input_filename, const std::string& output_f
     // Создаем объект блочного шифра GOST 28147-89 (Магма)
     std::unique_ptr<Botan::BlockCipher> cipher(Botan::BlockCipher::create("GOST-28147-89"));
     if (!cipher) {
-        throw std::runtime_error("Ошибка: не удалось создать объект шифра GOST-28147-89");
+        throw std::runtime_error("Error: shifr GOST-28147-89 not working");
     }
     cipher->set_key(key); // Устанавливаем ключ шифрования
 
     // Открываем зашифрованный файл для чтения
     std::ifstream input(input_filename, std::ios::binary);
     if (!input) {
-        throw std::runtime_error("Ошибка: не удалось открыть зашифрованный файл");
+        throw std::runtime_error("Error: ecrypted file not openning");
     }
 
     // Открываем выходной файл для записи расшифрованных данных
@@ -113,7 +113,7 @@ void decrypt_file(const std::string& input_filename, const std::string& output_f
     // Записываем расшифрованные данные в выходной файл
     output.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
 
-    std::wcout << L"Дешифрование завершено за " << decryption_time.count() << L" мс.\n";
+    std::wcout << L"Decryption time: " << decryption_time.count() << L" мс.\n";
 }
 
 // Функция запроса имени файла у пользователя
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
         SetConsoleCP(1251);
         SetConsoleOutputCP(CP_UTF8);       // Устанавливаем кодировку UTF-8 для корректного ввода/вывода
 
-        std::wcout << L"---------- СИММЕТРИЧНОЕ ШИФРОВАНИЕ ----------\n";
+        std::wcout << L"---------- Simmetric encription ----------\n";
         std::wcout << L"-- Botan ------ GOST-28147-89 ------ Magma --\n";
 
         // Получаем путь к папке с текстовыми файлами из параметров командной строки или у пользователя
@@ -148,12 +148,12 @@ int main(int argc, char* argv[]) {
             folder_path = argv[1];  // Если путь передан, используем его
         }
         else {
-            folder_path = get_folder_from_user(L"Введите путь к папке с текстовыми файлами: ");
+            folder_path = get_folder_from_user(L"Input path to txt folder: ");
         }
 
         // Проверяем, существует ли папка
         if (!fs::exists(folder_path) || !fs::is_directory(folder_path)) {
-            std::wcout << L"Ошибка: указанная папка не существует.\n";
+            std::wcout << L"Error: folder doesnt exist.\n";
             return 1;
         }
 
@@ -163,10 +163,10 @@ int main(int argc, char* argv[]) {
 
         int choice;
         while (true) {
-            std::wcout << L"\nВыберите действие:\n"
-                << L"1 - Зашифровать файл\n"
-                << L"2 - Расшифровать файл\n"
-                << L"0 - Выход\n"
+            std::wcout << L"\nChoose action:\n"
+                << L"1 - Encrypt file\n"
+                << L"2 - Decrypt file\n"
+                << L"0 - Exit\n"
                 << L"..." << std::endl;
 
             std::cin >> choice;
@@ -174,30 +174,30 @@ int main(int argc, char* argv[]) {
 
             if (choice == 1) {
                 std::string input_file = get_filename_from_user(
-                    L"Введите имя входного файла (по умолчанию: in.txt): ", "in.txt");
+                    L"Input name of input file (default: in.txt): ", "in.txt");
                 std::string encrypted_file = get_filename_from_user(
-                    L"Введите имя файла для сохранения зашифрованных данных (по умолчанию: out_enc.txt): ", "out_enc.txt");
+                    L"Input name of file with encripted data (default: out_enc.txt): ", "out_enc.txt");
 
                 encrypt_file(folder_path + "\\" + input_file, folder_path + "\\" + encrypted_file, key);
-                std::wcout << L"Файл " << to_wstring(input_file) << L" зашифрован в " << to_wstring(encrypted_file) << std::endl;
+                std::wcout << L"File " << to_wstring(input_file) << L" encrypted in " << to_wstring(encrypted_file) << std::endl;
 
             }
             else if (choice == 2) {
                 std::string encrypted_file = get_filename_from_user(
-                    L"Введите имя зашифрованного файла (по умолчанию: out_enc.txt): ", "out_enc.txt");
+                    L"Input name of file with encripted data (default: out_enc.txt): ", "out_enc.txt");
                 std::string decrypted_file = get_filename_from_user(
-                    L"Введите имя файла для сохранения расшифрованных данных (по умолчанию: out_dec.txt): ", "out_dec.txt");
+                    L"Input name of file with decrypted data (default: out_dec.txt): ", "out_dec.txt");
 
                 decrypt_file(folder_path + "\\" + encrypted_file, folder_path + "\\" + decrypted_file, key);
-                std::wcout << L"Файл " << to_wstring(encrypted_file) << L" расшифрован в " << to_wstring(decrypted_file) << std::endl;
+                std::wcout << L"Data " << to_wstring(encrypted_file) << L" dencrypted in " << to_wstring(decrypted_file) << std::endl;
 
                 std::wifstream result(folder_path + "\\" + decrypted_file);
                 result.imbue(std::locale("ru_RU.UTF-8"));
-                std::wcout << L"Содержимое расшифрованного файла:\n" << result.rdbuf() << std::endl;
+                std::wcout << L"Decrypted data:\n" << result.rdbuf() << std::endl;
 
             }
             else {
-                std::wcout << L"Работа программы завершена" << std::endl;
+                std::wcout << L"Program has been stopped" << std::endl;
                 break;
             }
         }
