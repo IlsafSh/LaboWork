@@ -166,19 +166,42 @@ int main() {
     SetConsoleOutputCP(1251);
 
     std::string folder_path;
-    std::cout << "Введите путь к папке с текстовыми файлами: ";
-    std::getline(std::cin, folder_path);
+    while (true) {
+        std::cout << "Введите путь к папке с текстовыми файлами: ";
+        std::getline(std::cin, folder_path);
+
+        if (fs::exists(folder_path) && fs::is_directory(folder_path)) {
+            break;
+        }
+        else {
+            std::cerr << "Ошибка: Папка не существует или путь некорректен. Попробуйте снова.\n";
+        }
+    }
 
     std::string keys_folder;
-    std::cout << "Введите путь к папке с ключами: ";
-    std::getline(std::cin, keys_folder);
+    while (true) {
+        std::cout << "Введите путь к папке с ключами: ";
+        std::getline(std::cin, keys_folder);
 
-    if (!fs::exists(keys_folder) || fs::is_empty(keys_folder)) {
-        std::cout << "Ключи отсутствуют. Генерация новых ключей..." << std::endl;
-        generate_keys(keys_folder);
-    }
-    else {
-        std::cout << "Найдены существующие ключи! Использую их" << std::endl;
+        if (fs::exists(keys_folder) && fs::is_directory(keys_folder)) {
+            std::cout << "Найдены существующие ключи! Использую их.\n";
+            break;
+        }
+        else if (!fs::exists(keys_folder)) {
+            std::cout << "Папка для ключей не существует. Пытаюсь создать...\n";
+            try {
+                fs::create_directories(keys_folder);
+                std::cout << "Папка создана. Генерирую новые ключи...\n";
+                generate_keys(keys_folder);
+                break;
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Не удалось создать папку: " << e.what() << "\n";
+            }
+        }
+        else {
+            std::cerr << "Ошибка: Введённый путь не является папкой. Попробуйте снова.\n";
+        }
     }
 
     while (true) {
