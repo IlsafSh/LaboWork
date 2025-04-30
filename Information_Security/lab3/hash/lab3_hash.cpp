@@ -66,7 +66,7 @@ void sign_file_gost(const std::string& input_file, const std::string& output_fil
     std::vector<uint8_t> file_data((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
 
-    auto hash = Botan::HashFunction::create("Streebog-256");
+    auto hash = Botan::HashFunction::create("GOST-34.11");
     if (!hash) {
         std::cerr << "Ошибка создания ГОСТ хэш-функции." << std::endl;
         return;
@@ -130,7 +130,7 @@ void verify_signature_gost(const std::string& input_file, const std::string& sig
     std::vector<uint8_t> file_data((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     in.close();
 
-    auto hash = Botan::HashFunction::create("Streebog-256");
+    auto hash = Botan::HashFunction::create("GOST-34.11");
     if (!hash) {
         std::cerr << "Ошибка создания ГОСТ хэш-функции." << std::endl;
         return;
