@@ -1,0 +1,32 @@
+{
+    "exp_id": "EXP001",
+    "model_config": {
+        "class": "SVMConfig",
+        "model_name": "SVM",
+        "input_size": 31,
+        "output_size": 51,
+        "kernel": "rbf",
+        "C": 1.0,
+        "gamma": "scale",
+        "degree": 3,
+        "coef0": 0.0,
+        "class_weight": null,
+        "tol": 0.001
+    },
+    "training_config": {
+        "class": "TrainingConfig",
+        "epochs": 10,
+        "batch_size": 32,
+        "optimizer": "adam",
+        "learning_rate": 0.001
+    },
+    "dataset_type": "keystroke",
+    "results": {
+        "accuracy": 0.9189,
+        "precision": 0.9493,
+        "recall": 0.7847,
+        "f1_score": 0.7961,
+        "roc_auc": 0.9656,
+        "eer": 0.083
+    }
+}

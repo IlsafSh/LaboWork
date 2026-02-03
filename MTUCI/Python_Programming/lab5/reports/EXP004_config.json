@@ -1,0 +1,35 @@
+{
+    "exp_id": "EXP004",
+    "model_config": {
+        "class": "XGBoostConfig",
+        "model_name": "XGBoost",
+        "input_size": 31,
+        "output_size": 51,
+        "n_estimators": 100,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "min_child_weight": 1,
+        "subsample": 1.0,
+        "colsample_bytree": 1.0,
+        "gamma": 0,
+        "reg_alpha": 0,
+        "reg_lambda": 1.0,
+        "random_state": null
+    },
+    "training_config": {
+        "class": "TrainingConfig",
+        "epochs": 10,
+        "batch_size": 32,
+        "optimizer": "adam",
+        "learning_rate": 0.001
+    },
+    "dataset_type": "keystroke",
+    "results": {
+        "accuracy": 0.9064,
+        "precision": 0.9802,
+        "recall": 0.9898,
+        "f1_score": 0.709,
+        "roc_auc": 0.8236,
+        "eer": 0.0495
+    }
+}

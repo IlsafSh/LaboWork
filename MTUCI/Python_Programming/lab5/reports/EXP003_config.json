@@ -1,0 +1,33 @@
+{
+    "exp_id": "EXP003",
+    "model_config": {
+        "class": "GradientBoostingConfig",
+        "model_name": "GradientBoosting",
+        "input_size": 31,
+        "output_size": 51,
+        "n_estimators": 100,
+        "learning_rate": 0.1,
+        "max_depth": 3,
+        "min_samples_split": 2,
+        "min_samples_leaf": 1,
+        "subsample": 1.0,
+        "loss": "deviance",
+        "random_state": null
+    },
+    "training_config": {
+        "class": "TrainingConfig",
+        "epochs": 10,
+        "batch_size": 32,
+        "optimizer": "adam",
+        "learning_rate": 0.001
+    },
+    "dataset_type": "keystroke",
+    "results": {
+        "accuracy": 0.9649,
+        "precision": 0.8989,
+        "recall": 0.8624,
+        "f1_score": 0.7338,
+        "roc_auc": 0.9148,
+        "eer": 0.0276
+    }
+}

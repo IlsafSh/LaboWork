@@ -1,0 +1,29 @@
+{
+    "exp_id": "EXP006",
+    "model_config": {
+        "class": "LSTMConfig",
+        "model_name": "LSTM",
+        "input_size": 31,
+        "output_size": 51,
+        "hidden_size": 128,
+        "num_layers": 2,
+        "dropout": 0.0,
+        "bidirectional": false
+    },
+    "training_config": {
+        "class": "TrainingConfig",
+        "epochs": 10,
+        "batch_size": 32,
+        "optimizer": "adam",
+        "learning_rate": 0.001
+    },
+    "dataset_type": "keystroke",
+    "results": {
+        "accuracy": 0.8699,
+        "precision": 0.928,
+        "recall": 0.733,
+        "f1_score": 0.8349,
+        "roc_auc": 0.8596,
+        "eer": 0.0693
+    }
+}
