@@ -402,3 +402,4 @@ FodyWeavers.xsd
 
 /Information_Security/lab3/grisha
 lightning_logs/
+*.csproj.lscache
